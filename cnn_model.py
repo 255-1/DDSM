@@ -1,0 +1,40 @@
+import tensorflow as tf
+
+def conv2d(x,W,s):
+    return tf.nn.conv2d(x,W,strides=[1,s,s,1],padding='VALID')
+def conv2d_P(x,W,s):
+    return tf.nn.conv2d(x,W,strides=[1,s,s,1],padding='SAME')
+def max_pooling2x2(x):
+    return tf.nn.max_pool(x,ksize=[1,3,3,1],strides=[1,2,2,1],padding='VALID')
+def model(x,keep_prob):
+    w_conv1 = tf.Variable(tf.zeros([11,11,3,64]),dtype=tf.float32,name='w_1')
+    b_conv1 = tf.Variable(tf.zeros([64]),dtype=tf.float32,name='b_1')
+    conv1 = tf.nn.relu(conv2d_P(x,w_conv1,4)+b_conv1)
+    pool_1 = max_pooling2x2(conv1)
+    w_conv2 = tf.Variable(tf.zeros([5,5,64,192]),dtype=tf.float32,name='w_2')
+    b_conv2 = tf.Variable(tf.zeros([192]),dtype=tf.float32,name='b_2')
+    conv2 = tf.nn.relu(conv2d_P(pool_1, w_conv2, 1) + b_conv2)
+    pool_2 = max_pooling2x2(conv2)
+    w_conv3 = tf.Variable(tf.zeros([3,3,192,384]),dtype=tf.float32,name='w_3')
+    b_conv3 = tf.Variable(tf.zeros([384]),dtype=tf.float32,name='b_3')
+    conv3 = tf.nn.relu(conv2d_P(pool_2, w_conv3, 1) + b_conv3)
+    w_conv4 = tf.Variable(tf.zeros([3,3,384,256]),dtype=tf.float32,name='w_4')
+    b_conv4 = tf.Variable(tf.zeros([256]),dtype=tf.float32,name='b_4')
+    conv4 = tf.nn.relu(conv2d_P(conv3, w_conv4, 1) + b_conv4)
+    w_conv5 = tf.Variable(tf.zeros([3,3,256,256]),dtype=tf.float32,name='w_5')
+    b_conv5 = tf.Variable(tf.zeros([256]),dtype=tf.float32,name='b_5')
+    conv5 = tf.nn.relu(conv2d_P(conv4, w_conv5, 1) + b_conv5)
+    pool_3 = max_pooling2x2(conv5)
+    w_conv6 = tf.Variable(tf.zeros([3*3*256,4096]),dtype=tf.float32,name='w_6')
+    b_conv6 = tf.Variable(tf.zeros([4096]),dtype=tf.float32,name='b_6')
+    pool3_flat = tf.reshape(pool_3, [-1, 3 * 3 * 256])
+    fc1 = tf.nn.relu(tf.matmul(pool3_flat, w_conv6) + b_conv6)
+    fc1_drop = tf.nn.dropout(fc1, keep_prob)
+    w_conv7 = tf.Variable(tf.zeros([4096,4096]),dtype=tf.float32,name='w_7')
+    b_conv7 = tf.Variable(tf.zeros([4096]),dtype=tf.float32,name='b_7')
+    fc2 = tf.nn.relu(tf.matmul(fc1_drop, w_conv7) + b_conv7)
+    fc2_drop = tf.nn.dropout(fc2, keep_prob)
+    w_conv8 = tf.Variable(tf.zeros([4096,2]),dtype=tf.float32,name='w_8')
+    b_conv8 = tf.Variable(tf.zeros([2]),dtype=tf.float32,name='b_8')
+    y_pre = tf.nn.softmax(tf.matmul(fc2_drop, w_conv8) + b_conv8)
+    return y_pre
